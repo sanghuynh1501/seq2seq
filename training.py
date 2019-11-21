@@ -48,7 +48,7 @@ ATTN_DIM = 8
 ENC_DROPOUT = 0.5
 DEC_DROPOUT = 0.5
 
-enc = Encoder(INPUT_DIM, ENC_EMB_DIM, ENC_HID_DIM, DEC_HID_DIM, False)
+enc = Encoder(INPUT_DIM, ENC_EMB_DIM, ENC_HID_DIM, DEC_HID_DIM, True)
 attn = Attention(ENC_HID_DIM, DEC_HID_DIM, ATTN_DIM, enc)
 dec = Decoder(OUTPUT_DIM, DEC_EMB_DIM, ENC_HID_DIM, DEC_HID_DIM, DEC_DROPOUT, enc, attn)
 model = Seq2Seq(enc, dec, device).to(device)

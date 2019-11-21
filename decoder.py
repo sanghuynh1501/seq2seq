@@ -14,9 +14,11 @@ class Decoder(nn.Module):
                  dec_hid_dim: int,
                  dropout: int,
                  encoder: Encoder,
-                 attention: nn.Module):
+                 attention: nn.Module,
+                 mode="bahdanau"):
         super().__init__()
 
+        self.mode = mode
         self.emb_dim = emb_dim
         self.enc_hid_dim = enc_hid_dim
         self.dec_hid_dim = dec_hid_dim
@@ -51,7 +53,33 @@ class Decoder(nn.Module):
 
         return weighted_encoder_rep
 
-    def forward(self,
+    def luong(self,
+                input: Tensor,
+                decoder_hidden: Tensor,
+                encoder_outputs: Tensor) -> Tuple[Tensor]:
+
+        input = input.unsqueeze(0)
+
+        embedded = self.dropout(self.embedding(input))
+        decoder_hidden = decoder_hidden.unsqueeze(0)
+
+        print("embedding.shape ", embedded.shape)
+        print("decoder_hidden.shape ", decoder_hidden.shape)
+
+        rnn_output, hidden = self.rnn(embedded, decoder_hidden)
+
+        weighted_encoder_rep = self._weighted_encoder_rep(rnn_output,
+                                                          encoder_outputs)
+
+        weighted_encoder_rep = weighted_encoder_rep.squeeze(0)
+
+        output = self.out(torch.cat((rnn_output,
+                                     weighted_encoder_rep,
+                                     embedded), dim=1))
+
+        return output, hidden.squeeze(0)
+
+    def bahdanau(self,
                 input: Tensor,
                 decoder_hidden: Tensor,
                 encoder_outputs: Tensor) -> Tuple[Tensor]:
@@ -76,3 +104,12 @@ class Decoder(nn.Module):
                                      embedded), dim=1))
 
         return output, decoder_hidden.squeeze(0)
+
+    def forward(self,
+                input: Tensor,
+                decoder_hidden: Tensor,
+                encoder_outputs: Tensor) -> Tuple[Tensor]:
+        if self.mode == "bahdanau":
+            return self.bahdanau(input, decoder_hidden, encoder_outputs)
+        else:
+            return self.luong(input, decoder_hidden, encoder_outputs)
